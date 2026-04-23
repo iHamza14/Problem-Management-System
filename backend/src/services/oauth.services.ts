@@ -1,8 +1,12 @@
+/**
+ * OAuth Service — Google OAuth login flow
+ * Updated: no longer references handle/rating on User model
+ */
 import { prisma } from "../prismac";
 import { randomUUID } from "crypto";
 import { signToken } from "../utils/jwt";
-import { syncLast30DaysSolves } from "./cfSolveSync.service";
 import { GoogleTokenResponse } from "../types/codeforces";
+
 type GoogleUser = {
   sub: string;
   email: string;
@@ -20,18 +24,18 @@ export const googleOAuthLogin = async (code: string) => {
       client_secret: process.env.GOOGLE_CLIENT_SECRET!,
       code,
       grant_type: "authorization_code",
-      redirect_uri: process.env.GOOGLE_REDIRECT_URL!
-    })
+      redirect_uri: process.env.GOOGLE_REDIRECT_URL!,
+    }),
   });
 
-  const tokenData = (await tokenRes.json()) as GoogleTokenResponse
+  const tokenData = (await tokenRes.json()) as GoogleTokenResponse;
   if (!tokenData.access_token) {
     throw new Error("Google OAuth token exchange failed");
   }
 
   // 2. Fetch user profile
   const userRes = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
-    headers: { Authorization: `Bearer ${tokenData.access_token}` }
+    headers: { Authorization: `Bearer ${tokenData.access_token}` },
   });
 
   const googleUser = (await userRes.json()) as GoogleUser;
@@ -39,23 +43,21 @@ export const googleOAuthLogin = async (code: string) => {
   if (!googleUser.sub || !googleUser.email) {
     throw new Error("Invalid Google user data");
   }
- 
+
   // 3. Find or create user in DB
   let user = await prisma.user.findUnique({
-    where: { oauthId: googleUser.sub }
+    where: { oauthId: googleUser.sub },
   });
 
   if (!user) {
-  
     user = await prisma.user.create({
       data: {
         id: randomUUID(),
         email: googleUser.email,
         oauthProvider: "google",
-        oauthId: googleUser.sub
-      }
+        oauthId: googleUser.sub,
+      },
     });
-
   }
 
   // 4. Issue your JWT

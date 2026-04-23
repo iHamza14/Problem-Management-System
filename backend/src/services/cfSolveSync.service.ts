@@ -1,3 +1,7 @@
+/**
+ * Codeforces Solve Sync Service
+ * Updated for new schema: creates Problem records, then links Solve via problemId
+ */
 import { prisma } from "../prismac";
 import { CodeforcesResponse, CfSubmission } from "../types/codeforces";
 
@@ -10,7 +14,8 @@ const sleep = (ms: number) =>
 
 export async function syncLast30DaysSolves(
   userId: string,
-  handle: string
+  handle: string,
+  platformId: number
 ) {
   const cutoff =
     Math.floor(Date.now() / 1000) - 30 * 24 * 60 * 60;
@@ -19,12 +24,10 @@ export async function syncLast30DaysSolves(
   let pagesFetched = 0;
 
   const seen = new Set<string>();
-  const solves: {
-    userId: string;
+  const rawSolves: {
     contestId: number;
     index: string;
     problemName: string | null;
-    link: string;
     solvedAt: Date;
   }[] = [];
 
@@ -57,32 +60,66 @@ export async function syncLast30DaysSolves(
 
       seen.add(key);
 
-      solves.push({
-        userId,
+      rawSolves.push({
         contestId: s.problem.contestId,
         index: s.problem.index,
         problemName: s.problem.name ?? null,
-        link: `https://codeforces.com/problemset/problem/${s.problem.contestId}/${s.problem.index}`,
-        solvedAt: new Date(s.creationTimeSeconds * 1000)
+        solvedAt: new Date(s.creationTimeSeconds * 1000),
       });
     }
 
     from += PAGE_SIZE;
-    console.log("working")
+    console.log("working");
     await sleep(DELAY_MS);
   }
 
-  if (solves.length === 0) return;
+  if (rawSolves.length === 0) return;
 
-  await prisma.solve.createMany({
-    data: solves,
-    skipDuplicates: true
-  });
+  // Upsert Problem records and create Solve entries
+  for (const raw of rawSolves) {
+    const externalId = `${raw.contestId}/${raw.index}`;
+    const url = `https://codeforces.com/problemset/problem/${raw.contestId}/${raw.index}`;
+
+    try {
+      // Upsert the problem
+      const problem = await prisma.problem.upsert({
+        where: {
+          platformId_externalId: { platformId, externalId },
+        },
+        create: {
+          platformId,
+          externalId,
+          title: raw.problemName || `${raw.contestId}${raw.index}`,
+          url,
+        },
+        update: {
+          title: raw.problemName || undefined,
+        },
+      });
+
+      // Create the solve (skip if already exists)
+      await prisma.solve.upsert({
+        where: {
+          userId_problemId: { userId, problemId: problem.id },
+        },
+        create: {
+          userId,
+          problemId: problem.id,
+          solvedAt: raw.solvedAt,
+        },
+        update: {},
+      });
+    } catch (err) {
+      // Skip duplicates or constraint errors
+      console.error(`Failed to sync ${externalId}:`, err);
+    }
+  }
 }
 
 export async function syncLast24HoursSolves(
   userId: string,
-  handle: string
+  handle: string,
+  platformId: number
 ) {
   const cutoff =
     Math.floor(Date.now() / 1000) - 24 * 60 * 60;
@@ -91,11 +128,10 @@ export async function syncLast24HoursSolves(
   let pagesFetched = 0;
 
   const seen = new Set<string>();
-  const solves: {
-    userId: string;
+  const rawSolves: {
     contestId: number;
     index: string;
-    link: string;
+    problemName: string | null;
     solvedAt: Date;
   }[] = [];
 
@@ -127,12 +163,11 @@ export async function syncLast24HoursSolves(
 
       seen.add(key);
 
-      solves.push({
-        userId,
-        contestId: s.problem.contestId!,
-        index: s.problem.index!,
-        link: `https://codeforces.com/problemset/problem/${s.problem.contestId}/${s.problem.index}`,
-        solvedAt: new Date(s.creationTimeSeconds * 1000)
+      rawSolves.push({
+        contestId: s.problem.contestId,
+        index: s.problem.index,
+        problemName: s.problem.name ?? null,
+        solvedAt: new Date(s.creationTimeSeconds * 1000),
       });
     }
 
@@ -140,11 +175,40 @@ export async function syncLast24HoursSolves(
     await sleep(DELAY_MS);
   }
 
-  if (solves.length === 0) return;
+  if (rawSolves.length === 0) return;
 
-  await prisma.solve.createMany({
-    data: solves,
-    skipDuplicates: true
-  });
+  // Same upsert logic as 30-day sync
+  for (const raw of rawSolves) {
+    const externalId = `${raw.contestId}/${raw.index}`;
+    const url = `https://codeforces.com/problemset/problem/${raw.contestId}/${raw.index}`;
+
+    try {
+      const problem = await prisma.problem.upsert({
+        where: {
+          platformId_externalId: { platformId, externalId },
+        },
+        create: {
+          platformId,
+          externalId,
+          title: raw.problemName || `${raw.contestId}${raw.index}`,
+          url,
+        },
+        update: {},
+      });
+
+      await prisma.solve.upsert({
+        where: {
+          userId_problemId: { userId, problemId: problem.id },
+        },
+        create: {
+          userId,
+          problemId: problem.id,
+          solvedAt: raw.solvedAt,
+        },
+        update: {},
+      });
+    } catch (err) {
+      console.error(`Failed to sync ${externalId}:`, err);
+    }
+  }
 }
-

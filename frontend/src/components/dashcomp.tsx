@@ -1,3 +1,7 @@
+/**
+ * Dashboard Components — Filter buttons and problem list
+ * Updated for new schema: Solve has .problem.title/.problem.url
+ */
 import type { Solve } from "../services/api";
 
 type FilterButtonProps = {
@@ -6,6 +10,7 @@ type FilterButtonProps = {
   onClick: () => void;
 };
 
+/** Gradient-style filter tab button */
 export const FilterButton = ({ label, active, onClick }: FilterButtonProps) => (
   <button
     onClick={onClick}
@@ -20,26 +25,31 @@ type QuestionsTableProps = {
   title: string;
 };
 
+/** Problem list displayed as styled cards */
 export const QuestionsTable = ({ solves, title }: QuestionsTableProps) => {
-  if (solves.length === 0) return <p>No solves found.</p>;
+  if (solves.length === 0) {
+    return (
+      <p className="empty-text">
+        No problems solved in this period. Keep grinding! 💪
+      </p>
+    );
+  }
 
   return (
     <div>
-      <h2 className="questions-title">{title}</h2>
+      {title && <h2 className="questions-title">{title}</h2>}
       <ul className="questions-list">
         {solves.map((s) => (
-          <li key={`${s.contestId}-${s.index}-${s.solvedAt}`} className="question-item">
+          <li key={s.id} className="question-item">
             <a
-              href={s.link}
+              href={s.problem.url}
               target="_blank"
               rel="noreferrer"
               className="question-link"
             >
-              <div className="question-code">
-                {s.problemName}
-              </div>
+              <div className="question-code">{s.problem.title}</div>
               <div className="question-time">
-                {/* {new Date(s.solvedAt).toLocaleString()} */}
+                {s.problem.externalId} • {s.problem.platform.name}
               </div>
             </a>
           </li>

@@ -7,27 +7,212 @@ datasource db {
   provider = "postgresql"
 }
 
+//////////////////////////////////////////////////////
+// USER + PLATFORM HANDLE (FIXED DESIGN)
+//////////////////////////////////////////////////////
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  oauthProvider String
+  oauthId       String   @unique
+  createdAt     DateTime @default(now())
+
+  handles       UserPlatformHandle[]
+  posts         Post[]
+  comments      Comment[]
+  solves        Solve[]
+  submissions   Submission[]
+  postLikes     PostLike[]
+  commentLikes  CommentLike[]
+}
+
+model Platform {
+  id       Int    @id @default(autoincrement())
+  name     String @unique
+  url      String
+
+  problems Problem[]
+  contests Contest[]
+  handles  UserPlatformHandle[]
+}
+
+model UserPlatformHandle {
+  userId     String
+  platformId Int
+  handle     String
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  platform Platform @relation(fields: [platformId], references: [id], onDelete: Cascade)
+
+  @@id([userId, platformId])
+  @@unique([platformId, handle])
+}
+
+//////////////////////////////////////////////////////
+// PROBLEM + CONTEST SYSTEM
+//////////////////////////////////////////////////////
+
+model Problem {
+  id          String   @id @default(uuid())
+  platformId  Int
+  externalId  String
+  title       String
+  difficulty  String?
+  url         String
+
+  platform    Platform @relation(fields: [platformId], references: [id], onDelete: Cascade)
+
+  solves      Solve[]
+  submissions Submission[]
+  contests    ContestProblem[]
+  tags        ProblemTag[]
+  posts       Post[]
+
+  @@unique([platformId, externalId])
+}
+
+model Contest {
+  id         Int
+  platformId Int
+  name       String
+
+  platform Platform @relation(fields: [platformId], references: [id], onDelete: Cascade)
+  problems ContestProblem[]
+
+  @@id([id, platformId])
+}
+
+model ContestProblem {
+  contestId  Int
+  platformId Int
+  problemId  String
+  index      String
+
+  contest Contest @relation(fields: [contestId, platformId], references: [id, platformId], onDelete: Cascade)
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@id([contestId, problemId])
+}
+
+//////////////////////////////////////////////////////
+// TAG SYSTEM
+//////////////////////////////////////////////////////
+
+model Tag {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+
+  problems ProblemTag[]
+  posts    PostTag[]
+}
+
+model ProblemTag {
+  problemId String
+  tagId     Int
+
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([problemId, tagId])
+}
+
+//////////////////////////////////////////////////////
+// SOLVES + SUBMISSIONS
+//////////////////////////////////////////////////////
+
 model Solve {
   id        String   @id @default(uuid())
   userId    String
-  contestId Int
-  index     String
-  problemName String?
-  link      String
+  problemId String
   solvedAt  DateTime
-  User      User     @relation(fields: [userId], references: [id])
 
-  @@unique([userId, contestId, index])
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, problemId])
 }
 
+model Submission {
+  id          String   @id @default(uuid())
+  userId      String
+  problemId   String
+  status      String
+  language    String
+  runtime     Int?
+  submittedAt DateTime
 
-model User {
-  id           String   @id
-  email        String   @unique
-  handle       String?   @unique
-  rating       Int?
-  oauthProvider String
-  oauthId      String   @unique
-  createdAt    DateTime @default(now())
-  Solve        Solve[]
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+}
+
+//////////////////////////////////////////////////////
+// BLOG / DISCUSSION SYSTEM
+//////////////////////////////////////////////////////
+
+model Post {
+  id        String   @id @default(uuid())
+  authorId  String
+  title     String
+  content   String
+  problemId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  author  User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  problem Problem? @relation(fields: [problemId], references: [id], onDelete: SetNull)
+
+  comments Comment[]
+  likes    PostLike[]
+  tags     PostTag[]
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  postId    String
+  userId    String
+  parentId  String?
+  content   String
+  createdAt DateTime @default(now())
+
+  post    Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent  Comment? @relation("CommentThread", fields: [parentId], references: [id], onDelete: Cascade)
+  replies Comment[] @relation("CommentThread")
+
+  likes   CommentLike[]
+}
+
+//////////////////////////////////////////////////////
+// LIKES + POST TAGS
+//////////////////////////////////////////////////////
+
+model PostLike {
+  userId String
+  postId String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@id([userId, postId])
+}
+
+model CommentLike {
+  userId    String
+  commentId String
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comment Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@id([userId, commentId])
+}
+
+model PostTag {
+  postId String
+  tagId  Int
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([postId, tagId])
 }

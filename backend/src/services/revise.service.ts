@@ -1,3 +1,7 @@
+/**
+ * Revise Service — fetches spaced-repetition revision solves
+ * Updated for new schema: Solve → Problem (with title, url, platform)
+ */
 import { prisma } from "../prismac";
 
 const IST_OFFSET_MS = 0;
@@ -16,8 +20,6 @@ function getISTDayRangeUTCFromISTDate(istDate: Date) {
 
   return { startUTC, endUTC };
 }
-
-
 
 export const getRevisionSolves = async (userId: string) => {
   // 1️⃣ Compute now in IST
@@ -44,25 +46,36 @@ export const getRevisionSolves = async (userId: string) => {
   const { startUTC: mStart, endUTC: mEnd } =
     getISTDayRangeUTCFromISTDate(monthBackIST);
 
-  console.log("FINAL IST DAY RANGES (UTC):", {
-    yesterday: [yStart.toISOString(), yEnd.toISOString()],
-    weekBack: [wStart.toISOString(), wEnd.toISOString()],
-    monthBack: [mStart.toISOString(), mEnd.toISOString()]
-  });
+  // Include problem details (title, url, externalId) with each solve
+  const solveInclude = {
+    problem: {
+      select: {
+        id: true,
+        title: true,
+        url: true,
+        externalId: true,
+        difficulty: true,
+        platform: { select: { name: true } },
+      },
+    },
+  };
 
   const [previousDay, previousWeek, previousMonth] = await Promise.all([
     prisma.solve.findMany({
       where: { userId, solvedAt: { gte: yStart, lt: yEnd } },
-      orderBy: { solvedAt: "asc" }
+      orderBy: { solvedAt: "asc" },
+      include: solveInclude,
     }),
     prisma.solve.findMany({
       where: { userId, solvedAt: { gte: wStart, lt: wEnd } },
-      orderBy: { solvedAt: "asc" }
+      orderBy: { solvedAt: "asc" },
+      include: solveInclude,
     }),
     prisma.solve.findMany({
       where: { userId, solvedAt: { gte: mStart, lt: mEnd } },
-      orderBy: { solvedAt: "asc" }
-    })
+      orderBy: { solvedAt: "asc" },
+      include: solveInclude,
+    }),
   ]);
 
   return {
@@ -71,86 +84,3 @@ export const getRevisionSolves = async (userId: string) => {
     previousMonth
   };
 };
-
-
-// export const getRevisionSolves = async (userId: string) => {
-//   const now = new Date();
-
-//   console.log("========== REVISE DEBUG ==========");
-//   console.log("User ID:", userId);
-//   console.log("Now:", now.toISOString());
-
-//   // --- target days ---
-//   const yesterday = new Date(now);
-//   yesterday.setDate(yesterday.getDate() - 1);
-
-//   const weekBack = new Date(now);
-//   weekBack.setDate(weekBack.getDate() - 7);
-
-//   const monthBack = new Date(now);
-//   monthBack.setDate(monthBack.getDate() - 30);
-
-//   console.log("Yesterday (raw):", yesterday.toISOString());
-//   console.log("7 days back (raw):", weekBack.toISOString());
-//   console.log("30 days back (raw):", monthBack.toISOString());
-
-//   const { start: yStart, end: yEnd } = getDayRange(yesterday);
-//   const { start: wStart, end: wEnd } = getDayRange(weekBack);
-//   const { start: mStart, end: mEnd } = getDayRange(monthBack);
-
-//   console.log("Yesterday range:", {
-//     start: yStart.toISOString(),
-//     end: yEnd.toISOString()
-//   });
-
-//   console.log("Week-back range:", {
-//     start: wStart.toISOString(),
-//     end: wEnd.toISOString()
-//   });
-
-//   console.log("Month-back range:", {
-//     start: mStart.toISOString(),
-//     end: mEnd.toISOString()
-//   });
-
-//   // --- queries ---
-//   const [previousDay, previousWeek, previousMonth] = await Promise.all([
-//     prisma.solve.findMany({
-//       where: {
-//         userId,
-//         solvedAt: { gte: yStart, lt: yEnd }
-//       },
-//       orderBy: { solvedAt: "asc" }
-//     }),
-
-//     prisma.solve.findMany({
-//       where: {
-//         userId,
-//         solvedAt: { gte: wStart, lt: wEnd }
-//       },
-//       orderBy: { solvedAt: "asc" }
-//     }),
-
-//     prisma.solve.findMany({
-//       where: {
-//         userId,
-//         solvedAt: { gte: mStart, lt: mEnd }
-//       },
-//       orderBy: { solvedAt: "asc" }
-//     })
-//   ]);
-
-//   console.log("Results count:", {
-//     previousDay: previousDay.length,
-//     previousWeek: previousWeek.length,
-//     previousMonth: previousMonth.length
-//   });
-
-//   console.log("========== END DEBUG ==========");
-
-//   return {
-//     previousDay,
-//     previousWeek,
-//     previousMonth
-//   };
-// };

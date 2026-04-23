@@ -1,0 +1,252 @@
+/* ============================================================
+   Profile Page — Dark glassmorphism
+   ============================================================ */
+
+.profile-page {
+  min-height: 100vh;
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  padding: 32px 24px;
+}
+
+.profile-container {
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  display: grid;
+  gap: 24px;
+}
+
+/* ─── Profile Card ─── */
+.profile-card {
+  background: var(--bg-glass);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: 32px;
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  animation: fadeInUp 0.5s ease-out;
+}
+
+.profile-info {
+  flex: 1;
+}
+
+.rank {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.handle {
+  font-size: 28px;
+  font-weight: 800;
+  margin-top: 4px;
+  letter-spacing: -0.5px;
+}
+
+.handle a {
+  text-decoration: none;
+  transition: opacity var(--transition-fast);
+}
+
+.handle a:hover {
+  opacity: 0.8;
+}
+
+.stats {
+  margin-top: 20px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.stat .label {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.stat .value {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-top: 2px;
+}
+
+.email {
+  max-width: 260px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ─── Handle Row ─── */
+.handle-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+/* ─── Input ─── */
+.handle-input {
+  height: 44px;
+  padding: 0 16px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 14px;
+  outline: none;
+  transition: all var(--transition-fast);
+}
+
+.handle-input:focus {
+  border-color: var(--accent-start);
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15);
+}
+
+.handle-input::placeholder {
+  color: var(--text-muted);
+}
+
+/* ─── Buttons ─── */
+.submit-btn,
+.refresh-btn {
+  height: 44px;
+  padding: 0 24px;
+  background: var(--accent-gradient);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.25);
+}
+
+.submit-btn:hover,
+.refresh-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.35);
+}
+
+.submit-btn:active,
+.refresh-btn:active {
+  transform: translateY(0);
+}
+
+.submit-btn:disabled {
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+/* ─── Study Hours Widget ─── */
+.study-hours-card {
+  background: var(--bg-glass);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: 28px;
+  animation: fadeInUp 0.5s ease-out 0.1s backwards;
+}
+
+.study-hours-card h2 {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.hours-input-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.hours-input {
+  width: 100px;
+  height: 44px;
+  padding: 0 16px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  outline: none;
+  transition: all var(--transition-fast);
+  text-align: center;
+}
+
+.hours-input:focus {
+  border-color: var(--accent-start);
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15);
+}
+
+.hours-label {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+/* ─── Graph Card ─── */
+.graph-card {
+  background: var(--bg-glass);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: 28px;
+  animation: fadeInUp 0.5s ease-out 0.2s backwards;
+}
+
+.graph-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+}
+
+.graph-wrapper {
+  height: 280px;
+}
+
+/* Recharts dark theme overrides */
+.graph-card .recharts-text {
+  fill: var(--text-muted) !important;
+}
+
+.graph-card .recharts-cartesian-grid-horizontal line,
+.graph-card .recharts-cartesian-grid-vertical line {
+  stroke: var(--border-subtle) !important;
+}
+
+.graph-card .recharts-tooltip-wrapper .recharts-default-tooltip {
+  background: var(--bg-elevated) !important;
+  border: 1px solid var(--border-default) !important;
+  border-radius: var(--radius-md) !important;
+}
+
+/* ─── Accessibility ─── */
+button:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--accent-start);
+  outline-offset: 2px;
+}
+
+@media (max-width: 768px) {
+  .profile-card {
+    flex-direction: column;
+  }
+
+  .stats {
+    grid-template-columns: 1fr;
+  }
+}

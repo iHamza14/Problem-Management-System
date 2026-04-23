@@ -1,13 +1,17 @@
+/**
+ * Auth Middleware — verifies JWT and loads user with platform handles
+ * Updated for the new schema where handle/rating live in UserPlatformHandle
+ */
 import { Request, Response, NextFunction } from "express";
 import { verifyToken } from "../utils/jwt";
 import { prisma } from "../prismac";
 
 export interface AuthedRequest extends Request {
   user?: {
-    userId: string;   // 👈 KEEP YOUR ORIGINAL NAME
-    handle?: string | null;
+    userId: string;
     email?: string;
-    rating?: number | null;
+    // Convenience fields resolved from UserPlatformHandle
+    handle?: string | null;
   };
 }
 
@@ -25,21 +29,29 @@ export const checkAuth = async (
   try {
     const payload = verifyToken(token); // { userId: string }
 
-    // 🔥 Load fresh user from DB
+    // Load user from DB with platform handles
     const dbUser = await prisma.user.findUnique({
       where: { id: payload.userId },
+      include: {
+        handles: {
+          include: { platform: true },
+        },
+      },
     });
 
     if (!dbUser) {
       return res.status(401).json({ error: "User not found" });
     }
 
-    // ✅ PRESERVE YOUR ORIGINAL SHAPE
+    // Find the Codeforces handle if linked
+    const cfHandle = dbUser.handles.find(
+      (h) => h.platform.name.toLowerCase() === "codeforces"
+    );
+
     req.user = {
       userId: dbUser.id,
-      handle: dbUser.handle,
       email: dbUser.email,
-      rating: dbUser.rating,
+      handle: cfHandle?.handle ?? null,
     };
 
     next();

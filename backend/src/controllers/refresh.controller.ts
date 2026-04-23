@@ -1,27 +1,22 @@
-import { Request, Response } from "express";
+/**
+ * Refresh Controller — re-syncs user's CF data
+ * Updated for new schema: reads handle from UserPlatformHandle
+ */
+import { Response } from "express";
+import { AuthedRequest } from "../middleware/auth.middleware";
 import { prisma } from "../prismac";
-
-interface AuthedRequest extends Request {
-  user?: {
-    userId: string;   // 👈 KEEP YOUR ORIGINAL NAME
-    handle?: string | null;
-    email?: string;
-    rating?: number | null;
-  };
-}
-import { CodeforcesUser,CodeforcesResponse } from "../types/codeforces";
-import { syncLast24HoursSolves, syncLast30DaysSolves } from "../services/cfSolveSync.service";
-import { runDailyCfSyncJob } from "../jobs/dailySync.job";
+import { CodeforcesUser, CodeforcesResponse } from "../types/codeforces";
+import { syncLast30DaysSolves } from "../services/cfSolveSync.service";
 
 export const refreshController = async (req: AuthedRequest, res: Response) => {
   try {
-    const user= req.user
+    const user = req.user;
 
     if (!user || !user.handle) {
       return res.status(400).json({ error: "Handle not set" });
     }
 
-    // 2. Fetch CF info
+    // Fetch CF info
     const cfRes = await fetch(
       `https://codeforces.com/api/user.info?handles=${user.handle}`
     );
@@ -34,33 +29,23 @@ export const refreshController = async (req: AuthedRequest, res: Response) => {
 
     const cfUser = cfData.result[0];
 
-    // 3. Update DB (mainly rating)
-    const updatedUser = await prisma.user.update({
-      where: { id: user.userId },
-      data: {
-        rating: cfUser.rating ?? null,
-      },
+    // Find the codeforces platform ID
+    const platform = await prisma.platform.findUnique({
+      where: { name: "codeforces" },
     });
-    await syncLast30DaysSolves(updatedUser.id,updatedUser.handle!)
-    console.log("synced")
-    console.log(cfUser.handle)
+
+    if (platform) {
+      await syncLast30DaysSolves(user.userId, user.handle, platform.id);
+    }
+
+    console.log("synced");
     return res.json({
       success: true,
-      rating: updatedUser.rating,
-      handle: cfUser.handle
+      rating: cfUser.rating ?? null,
+      handle: cfUser.handle,
     });
   } catch (err) {
     console.error("Refresh error:", err);
     return res.status(500).json({ error: "Internal server error" });
   }
 };
-
-export const syncController= async (req:AuthedRequest,res:Response)=>{
-  try{
-    runDailyCfSyncJob
-  }
-  catch(err){
-    console.error("Sync error:", err);
-    return res.status(500).json({ error: "Internal server error" });
-  }
-}
