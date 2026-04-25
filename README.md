@@ -100,13 +100,13 @@ npm install npm@latest -g
 1. **Clone the repository**
 
 ```sh
-git clone https://github.com/Harsh-2005d/practiceCF.git
+git clone https://github.com/iHamza14/Problem-Revision-Tracker
 ```
 
 2. **Navigate into the project**
 
 ```sh
-cd practiceCF
+cd Problem-Revision-Tracker
 ```
 
 3. **Install dependencies**
@@ -163,8 +163,6 @@ This workflow encourages **systematic review instead of one-time problem solving
 * [ ] Mobile-first UI improvements
 * [ ] Exportable revision sets
 
-See the [open issues](https://github.com/Harsh-2005d/practiceCF/issues) for a full list.
-
 ---
 
 ## Contributing
@@ -209,23 +207,5 @@ Distributed under the **project_license**. See `LICENSE.txt` for more informatio
 * Codeforces for the platform and API
 * Google OAuth for authentication
 * The open-source community
-
----
-
-## References
-
-[contributors-shield]: https://img.shields.io/github/contributors/Harsh-2005d/practiceCF.svg?style=for-the-badge
-[contributors-url]: https://github.com/Harsh-2005d/practiceCF/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/Harsh-2005d/practiceCF.svg?style=for-the-badge
-[forks-url]: https://github.com/Harsh-2005d/practiceCF/network/members
-[stars-shield]: https://img.shields.io/github/stars/Harsh-2005d/practiceCF.svg?style=for-the-badge
-[stars-url]: https://github.com/Harsh-2005d/practiceCF/stargazers
-[issues-shield]: https://img.shields.io/github/issues/Harsh-2005d/practiceCF.svg?style=for-the-badge
-[issues-url]: https://github.com/Harsh-2005d/practiceCF/issues
-[license-shield]: https://img.shields.io/github/license/Harsh-2005d/practiceCF.svg?style=for-the-badge
-[license-url]: https://github.com/Harsh-2005d/practiceCF/blob/master/LICENSE.txt
-[linkedin-shield]: https://img.shields.io/badge/LinkedIn-black.svg?style=for-the-badge&logo=linkedin
-[linkedin-url]: https://linkedin.com/in/linkedin_username
-[product-screenshot]: images/screenshot.png
 
 ---
